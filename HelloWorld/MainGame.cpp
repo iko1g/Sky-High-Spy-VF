@@ -49,7 +49,7 @@ void UpdateAsteroidParticles();
 void UpdateDestroyed();
 void UpdateDebugText();
 //--------------------------------------------------------------------
-//                    UPDATE FUNCTIONS
+//                    CONTROL FUNCTIONS
 void HandleGroundedControls();
 void HandleNotGroundedControls();
 //--------------------------------------------------------------------
@@ -144,8 +144,9 @@ void UpdatePlayerState()
 		Play::SetSprite(playerObj, "agent8_dead", 0.2f);
 		playerObj.rotation = std::atan2(playerObj.velocity.width, -playerObj.velocity.height);
 		ScreenWrapping(playerObj, true);
+		Play::DrawFontText("64px", "PRESS ENTER TO CONTINUE", { displayWidth / 2 , displayHeight / 2}, Play::CENTRE);
 
-		if (Play::KeyPressed(VK_SPACE) == true)
+		if (Play::KeyPressed(VK_RETURN) == true)
 		{
 			gameState.remainingGems = 3;
 			gameState.rounds = 1;
@@ -174,6 +175,15 @@ void UpdatePlayerState()
 					Play::GetGameObject(gemID).type = typeDestroyed;
 				}
 			}
+
+			if (!Play::CollectGameObjectIDsByType(typeAsteroidPiece).empty())
+			{
+				for (int asteroidPieceID : Play::CollectGameObjectIDsByType(typeAsteroidPiece))
+				{
+					Play::GetGameObject(asteroidPieceID).type = typeDestroyed;
+				}
+			}
+
 			SpawnAsteroids(gameState.remainingGems);
 			SpawnMeteors(gameState.rounds);
 			gameState.playerState = stateAppear;
@@ -292,7 +302,7 @@ void UpdateAsteroidsAndPieces()
 		GameObject& asteroidPieceObj = Play::GetGameObject(asteroidPieceID);
 
 		Play::UpdateGameObject(asteroidPieceObj);
-		Play::DrawObjectRotated(asteroidPieceObj);
+		Play::DrawObject(asteroidPieceObj);
 
 		if (!Play::IsVisible(asteroidPieceObj))
 		{
@@ -342,21 +352,20 @@ void UpdatePlayerParticles()
 	{
 		int playerParticleID = Play::CreateGameObject(typePlayerParticle, playerObj.pos, 20, "particle");
 		GameObject& particleObj = Play::GetGameObject(playerParticleID);
-		particleObj.velocity = -playerObj.velocity;
-		float playerToAsteroidAng = atan2f(playerObj.pos.y - particleObj.pos.y, playerObj.pos.x - particleObj.pos.x);
-		particleObj.pos.x = playerObj.pos.x + 2 * cos(playerToAsteroidAng);
+		float playerToAsteroidAng = atan2f(particleObj.pos.y - playerObj.pos.y, particleObj.pos.x - playerObj.pos.x);
+		particleObj.pos.x = playerObj.pos.x + 2 * cos(playerToAsteroidAng);                                            //Spawn Particle So it follows path of playerobj
 		particleObj.pos.y = playerObj.pos.y + 2 * sin(playerToAsteroidAng);
 	}
 
 	std::vector<int> vPlayerParticles = Play::CollectGameObjectIDsByType(typePlayerParticle);
 
-	for (int particleIDs : vPlayerParticles)
+	for (int playerParticleIDs : vPlayerParticles)
 	{
-		GameObject& particleObj = Play::GetGameObject(particleIDs);
+		GameObject& particleObj = Play::GetGameObject(playerParticleIDs);
 
 		particleObj.scale -= 0.05;
 
-		if (particleObj.scale <= 0.0 ) 
+		if (particleObj.scale <= 0.8 )
 		{
 			particleObj.type = typeDestroyed;
 		}
@@ -369,10 +378,6 @@ void UpdatePlayerParticles()
 //Used to update asteroid pieces particle position
 void UpdateAsteroidParticles()
 {
-	//if player is not on asteroids then
-	//spawn particles while its moving maybe spawning on oldPos
-	GameObject& playerObj = Play::GetGameObjectByType(typePlayer);
-	
 	std::vector<int> vAsteroidPieces = Play::CollectGameObjectIDsByType(typeAsteroidPiece);
 
 	//if asteroid piece is visible spawn particles at
@@ -384,27 +389,24 @@ void UpdateAsteroidParticles()
 		{
 			int asteroidParticleID = Play::CreateGameObject(typeAsteroidPiece, asteroidPieceObj.pos, 20, "particle");
 			GameObject& particleObj = Play::GetGameObject(asteroidParticleID);
-			particleObj.velocity.x = asteroidPieceObj.velocity.y;
-			particleObj.velocity.y = -asteroidPieceObj.velocity.x;
 		}
 	}
 	
-
 	std::vector<int> vAsteroidParticles = Play::CollectGameObjectIDsByType(typeAsteroidParticle);
 	
-	for (int particleIDs : vAsteroidParticles)
+	for (int asteroidParticleIDs : vAsteroidParticles)
 	{
-		GameObject& particleObj = Play::GetGameObject(particleIDs);
+		GameObject& asteroidParticleObj = Play::GetGameObject(asteroidParticleIDs);
 
-		particleObj.scale -= 0.05;
+		asteroidParticleObj.scale -= 0.1;
 
-		if (particleObj.scale <= 0.8)
+		if (asteroidParticleObj.scale < 1 || !Play::IsVisible(asteroidParticleObj))
 		{
-			particleObj.type = typeDestroyed;
+			asteroidParticleObj.type = typeDestroyed;
 		}
 
-		Play::UpdateGameObject(particleObj);
-		Play::DrawObject(particleObj);
+		Play::UpdateGameObject(asteroidParticleObj);
+		Play::DrawObject(asteroidParticleObj);
 	}
 }
 
@@ -555,6 +557,7 @@ void HandleGroundedControls()
 			playerObj.pos.x = attachedAsteroidObj.pos.x + 120 * cos(playerToAsteroidAng);
 			playerObj.pos.y = attachedAsteroidObj.pos.y + 120 * sin(playerToAsteroidAng);
 			Play::SetSprite(playerObj, "agent8_fly", 0.25f);
+			Play::PlayAudio("explode");
 			gameState.playerState = stateNotGrounded;
 		}
 		else 
