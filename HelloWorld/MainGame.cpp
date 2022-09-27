@@ -85,7 +85,7 @@ bool MainGameUpdate( float elapsedTime )
 	UpdateAsteroidsAndPieces();
 	UpdateMeteors();
 	UpdatePlayerParticles();
-	//UpdateAsteroidParticles();
+	UpdateAsteroidParticles();
 	UpdatePlayerState();
 	UpdateDestroyed();
 	UpdateDebugText();
@@ -181,6 +181,14 @@ void UpdatePlayerState()
 				for (int asteroidPieceID : Play::CollectGameObjectIDsByType(typeAsteroidPiece))
 				{
 					Play::GetGameObject(asteroidPieceID).type = typeDestroyed;
+				}
+			}
+
+			if (!Play::CollectGameObjectIDsByType(typeAsteroidParticle).empty())
+			{
+				for (int asteroidPieceParticleID : Play::CollectGameObjectIDsByType(typeAsteroidParticle))
+				{
+					Play::GetGameObject(asteroidPieceParticleID).type = typeDestroyed;
 				}
 			}
 
@@ -380,33 +388,30 @@ void UpdateAsteroidParticles()
 {
 	std::vector<int> vAsteroidPieces = Play::CollectGameObjectIDsByType(typeAsteroidPiece);
 
-	//if asteroid piece is visible spawn particles at
-	for (int asteroidPieceID : vAsteroidPieces)
+	for(int asteroidPieceID : vAsteroidPieces)
 	{
 		GameObject& asteroidPieceObj = Play::GetGameObject(asteroidPieceID);
-		
-		if (Play::IsVisible(asteroidPieceObj))
+
+		if (Play::IsVisible(asteroidPieceObj)) 
 		{
-			int asteroidParticleID = Play::CreateGameObject(typeAsteroidPiece, asteroidPieceObj.pos, 20, "particle");
-			GameObject& particleObj = Play::GetGameObject(asteroidParticleID);
+			int asteroidParticleID = Play::CreateGameObject(typeAsteroidParticle, asteroidPieceObj.pos, 20, "particle");
 		}
 	}
-	
-	std::vector<int> vAsteroidParticles = Play::CollectGameObjectIDsByType(typeAsteroidParticle);
-	
-	for (int asteroidParticleIDs : vAsteroidParticles)
+
+	std::vector<int> vAsteroidPieceParticles = Play::CollectGameObjectIDsByType(typeAsteroidParticle);
+
+	for (int asteroidPieceParticleID : vAsteroidPieceParticles) 
 	{
-		GameObject& asteroidParticleObj = Play::GetGameObject(asteroidParticleIDs);
+		GameObject& asteroidPieceParticleObj = Play::GetGameObject(asteroidPieceParticleID);
 
-		asteroidParticleObj.scale -= 0.1;
+		asteroidPieceParticleObj.scale -= 0.05;
 
-		if (asteroidParticleObj.scale < 1 || !Play::IsVisible(asteroidParticleObj))
+		if (asteroidPieceParticleObj.scale != 1)
 		{
-			asteroidParticleObj.type = typeDestroyed;
+			asteroidPieceParticleObj.type = typeDestroyed;
 		}
-
-		Play::UpdateGameObject(asteroidParticleObj);
-		Play::DrawObject(asteroidParticleObj);
+		Play::UpdateGameObject(asteroidPieceParticleObj);
+		Play::DrawObject(asteroidPieceParticleObj);
 	}
 }
 
